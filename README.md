@@ -25,6 +25,10 @@
 > Meta and its affiliates; they are used only to describe the service this app
 > connects to. You need your own Muse account, a personal SDK token and the
 > Muse phone app to pair a device.
+>
+> **Muse is not available in every country or region.** Confirm that you are in
+> a supported region and that your Muse account is active and usable before
+> pairing a device or relying on voice and text features.
 
 Muser is a Cardputer Zero application built on the official Muse Linux SDK. A
 C++/LVGL front end renders the 320×170 interface on the device framebuffer and
@@ -177,7 +181,8 @@ chat content is bundled.
 ## Install and Pair
 
 A device needs Python 3.9+, networking, BlueZ, the Muse phone app and a personal
-SDK token.
+SDK token. Muse is not available in every region: make sure you are in a
+supported country or region and that your Muse account is active before pairing.
 
 ```shell
 sudo apt install ./muser_0.2.9_arm64.deb
