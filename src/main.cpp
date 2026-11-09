@@ -405,7 +405,7 @@ public:
         setting_=9;adjust_setting(1);
         if(!chinese()||font_!=cjk_)throw std::runtime_error("Chinese language switch failed");
         frame();capture(fs::path(root_path())/".cache/ui-zh-CN.png");
-        event({{"type","setup"},{"url","http://192.168.88.185:65535/"},{"expires",300}});
+        event({{"type","setup"},{"url","http://192.168.1.42:8050/"},{"expires",300}});
         frame();capture(fs::path(root_path())/".cache/ui-setup-zh-CN.png");
         show("settings");
         adjust_setting(1);
