@@ -1,0 +1,41 @@
+{
+  "app_name": "Muser",
+  "package_name": "muser",
+  "bin_name": "muser",
+  "version": "0.2.8",
+  "description": "Independent Muse voice companion for Cardputer Zero",
+  "store": {
+    "summary": "Talk to Muse with a pixel companion and live captions.",
+    "description": "Muser is an independent, unofficial community app for Cardputer Zero. Voice conversations, captions, keyboard chat and session-only records on a 320x170 display. English UI by default, with Simplified Chinese available in Settings. Requires a Muse account, SDK token and phone pairing. Not affiliated with or endorsed by Meta. Fn-free F/X/Z/C navigation and in-app setup by QR or the displayed IP and port; paste your SDK token in any phone or PC browser, then pair over Bluetooth. Saved pairing is retained while Muse service connections retry.",
+    "categories": [
+      "AI"
+    ],
+    "icon": "assets/images/muser.png",
+    "screenshots": [
+      "screenshots/home.png",
+      "screenshots/speaking.png",
+      "screenshots/settings.png",
+      "screenshots/setup.png"
+    ],
+    "share_code": "MUSE",
+    "license": "Apache-2.0",
+    "author": {
+      "display_name": "Muser community"
+    },
+    "permissions": {
+      "camera": false,
+      "microphone": true,
+      "imu": false,
+      "network": true,
+      "additional_hardware": false,
+      "background_service": false,
+      "external_display": false
+    },
+    "locales": {
+      "zh-CN": {
+        "summary": "像素伙伴、语音对话与实时字幕",
+        "description": "Muser 是独立开发的非官方社区应用，支持语音、字幕、英文键盘聊天和本次会话记录。英语默认、简体中文可切换；F/X/Z/C 无需 Fn 导航，App 内扫码在手机粘贴个人 SDK token 后自动蓝牙配对，与 Meta 无隶属或背书关系。"
+      }
+    }
+  }
+}

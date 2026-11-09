@@ -1,0 +1,7 @@
+[Desktop Entry]
+Name=Muser
+Exec=/usr/bin/muser
+Icon=share/images/muser.png
+Terminal=false
+Type=Application
+Comment=Independent Muse voice companion

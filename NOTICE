@@ -1,0 +1,33 @@
+Muser
+Copyright 2026 YuHaibo
+
+Muser is licensed under the Apache License, Version 2.0. See LICENSE.
+
+Muser is an independent, unofficial project. It is not affiliated with,
+endorsed by or sponsored by Meta. Muse and related marks are trademarks of
+Meta and its affiliates; they are used only to describe the service this
+application connects to.
+
+This product includes software developed at Meta Platforms, Inc. and
+affiliates: the Muse Gadget SDK, pinned at
+463bd2a05380fea4211b0099ad0f70933c108b20 and vendored under vendor/musegadget
+and vendor/muse*.c/h. It is licensed under the Apache License, Version 2.0;
+the upstream text is retained in vendor/MUSE-SDK-LICENSE. Local modifications
+are listed in THIRD_PARTY_LICENSES.md.
+
+The Jollybot avatar is explicitly excluded from the upstream Apache License.
+The upstream README states that the Apache License does not cover
+esp32/avatar. The vendored avatar files (vendor/muse_pixel.c,
+vendor/muse_pixel.h, vendor/muse_speaking.h and vendor/muse_state.h) are
+included only as a pinned SDK dependency. Muser does not relicense this
+artwork, and no rights in the character design are claimed. Review the
+upstream terms before redistributing or using the avatar commercially.
+
+The CardputerZero Template structure and cross toolchain are Copyright (c)
+2026 M5Stack CardputerZero Community and licensed under the MIT License;
+vendor/TEMPLATE-LICENSE is retained.
+
+Third-party components and their licenses are recorded in
+THIRD_PARTY_LICENSES.md. LVGL, nlohmann/json and sounddevice are MIT;
+websockets is BSD-3-Clause; Noto Sans CJK SC is licensed under the SIL Open
+Font License 1.1.

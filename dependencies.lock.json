@@ -1,0 +1,9 @@
+{
+  "muse_gadget_sdk": "463bd2a05380fea4211b0099ad0f70933c108b20",
+  "cardputer_template": "477fa6d217b683e3084c361a757f03dc8ca9f753",
+  "lvgl": "v9.5.0",
+  "python_wheels": {
+    "websockets": {"version":"15.0.1","sha256":"f7a866fbc1e97b5c617ee4116daaa09b722101d4a3c170c787450ba409f9736f"},
+    "sounddevice": {"version":"0.5.3","sha256":"ea7738baa0a9f9fef7390f649e41c9f2c8ada776180e56c2ffd217133c92a806"}
+  }
+}

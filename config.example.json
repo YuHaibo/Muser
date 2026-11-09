@@ -1,0 +1,8 @@
+{
+  "language": "en",
+  "volume": 70,
+  "idle_timeout": 45,
+  "overall_timeout": 300,
+  "input_device": null,
+  "output_device": null
+}

@@ -1,0 +1,11 @@
+{
+  "version":6,
+  "configurePresets":[
+    {"name":"desktop","generator":"Unix Makefiles","binaryDir":"${sourceDir}/build/desktop","cacheVariables":{"CMAKE_BUILD_TYPE":"Release","USE_DESKTOP":"ON"}},
+    {"name":"cp0-native","generator":"Unix Makefiles","binaryDir":"${sourceDir}/build/cp0-native","cacheVariables":{"CMAKE_BUILD_TYPE":"Release","USE_DESKTOP":"OFF"}},
+    {"name":"cp0-cross","generator":"Unix Makefiles","binaryDir":"${sourceDir}/build/cp0-cross","cacheVariables":{"CMAKE_BUILD_TYPE":"Release","USE_DESKTOP":"OFF","CMAKE_TOOLCHAIN_FILE":"${sourceDir}/cmake/toolchains/cp0-aarch64-linux-gnu.cmake"}}
+  ],
+  "buildPresets":[{"name":"desktop","configurePreset":"desktop"},{"name":"cp0-cross-rel","configurePreset":"cp0-cross"}],
+  "packagePresets":[{"name":"cp0-cross-deb","configurePreset":"cp0-cross","generators":["DEB"]}],
+  "workflowPresets":[{"name":"cp0-cross-package","steps":[{"type":"configure","name":"cp0-cross"},{"type":"build","name":"cp0-cross-rel"},{"type":"package","name":"cp0-cross-deb"}]}]
+}

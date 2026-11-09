@@ -1,0 +1,4 @@
+#!/bin/sh
+set -eu
+export MUSER_ROOT=/usr/share/muser
+exec /usr/lib/muser/muser "$@"

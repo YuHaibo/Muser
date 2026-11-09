@@ -1,0 +1,90 @@
+# ---------------------------------------------------------------------------
+# Operating systems and editors
+# ---------------------------------------------------------------------------
+.DS_Store
+._*
+Thumbs.db
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
+*.iml
+.vs/
+*.sublime-workspace
+*.sublime-project
+
+# ---------------------------------------------------------------------------
+# Python
+# ---------------------------------------------------------------------------
+.venv/
+__pycache__/
+*.py[cod]
+*.egg-info/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+
+# ---------------------------------------------------------------------------
+# CMake, compilers and packaging output
+# ---------------------------------------------------------------------------
+build/
+build-*/
+cmake-build-*/
+out/
+dist/
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+install_manifest.txt
+Makefile
+CPackConfig.cmake
+CPackSourceConfig.cmake
+CTestTestfile.cmake
+Testing/
+CMakeUserPresets.json
+compile_commands.json
+*.o
+*.obj
+*.a
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exe
+*.deb
+*.dmg
+*.pkg
+
+# ---------------------------------------------------------------------------
+# Local caches, BSP downloads and diagnostic captures
+# ---------------------------------------------------------------------------
+.cache/
+.run/
+*.wav
+*.raw
+*.tar.gz
+
+# ---------------------------------------------------------------------------
+# Runtime state, credentials and logs (never commit these)
+# ---------------------------------------------------------------------------
+sdk_token
+pairing.json
+identity.json
+preferences.json
+connection-status.json
+voice-status.json
+chat-status.json
+logs/
+*.log
+
+# ---------------------------------------------------------------------------
+# Local tooling
+# ---------------------------------------------------------------------------
+.clangd
+*.plist
+*.tmp
+*.bak
+TODO
