@@ -47,6 +47,10 @@ file operation.
 - Streaming user and assistant captions with final-text correction. Replies
   from before a barge-in are fenced off so stale audio and text cannot leak
   into the next turn.
+- Caption paging: Left/Right (or Z/C) move between messages and Up/Down (or
+  F/X) page within a long message. The role label shows the current position.
+- Clear call-state prompts: starting a call replaces the caption area with
+  "Starting voice...", then "Listening...", until the first transcript arrives.
 - Text chat from the keyboard through the paired account's main conversation.
 - English and Simplified Chinese UI, English by default. Settings → Language
   switches immediately; both UI languages show Chinese and English captions,
@@ -59,7 +63,8 @@ file operation.
 - In-app phone setup: open the displayed LAN address, paste a personal SDK
   token, then complete Bluetooth pairing from the Muse phone app.
 - Settings rows show labels and values in separate columns, with the active row
-  highlighted. F/X/Z/C navigate without Fn.
+  highlighted. F/X select rows and Z/C change values, all without Fn.
+- H opens an in-app help screen with every shortcut and the build version.
 
 > [!NOTE]
 > Clearing the session view and exiting only drop local memory; they do not
@@ -74,10 +79,8 @@ file operation.
 | ![Home](screenshots/home.png) | ![Live captions](screenshots/speaking.png) |
 | **History** | **Settings** |
 | ![History](screenshots/history.png) | ![Settings](screenshots/settings.png) |
-
-The setup page is shown on the device during first-time pairing:
-
-![Phone setup](screenshots/setup.png)
+| **Help** | **Phone setup** |
+| ![Help](screenshots/help.png) | ![Phone setup](screenshots/setup.png) |
 
 Captures come from the real LVGL UI. The demo QR code is illustrative and does
 not connect to a real setup service.
@@ -160,7 +163,7 @@ The repository also provides a Docker entry point that pins the build image:
 MUSER_BSP_DIR=/absolute/path/to/sdk_bsp-src ./scripts/build-arm64.sh
 ```
 
-The artifact is `dist/muser_0.2.8_arm64.deb`. It targets the current official
+The artifact is `dist/muser_0.2.9_arm64.deb`. It targets the current official
 BSP's ARM64 system and requires glibc ≥ 2.38 and libstdc++ ≥ 13.2; apt checks
 those versions. The package contains the UI, SDK, pinned websockets and
 sounddevice wheels, fonts, icons and the APPLaunch entry. Python cryptography,
@@ -177,13 +180,13 @@ A device needs Python 3.9+, networking, BlueZ, the Muse phone app and a personal
 SDK token.
 
 ```shell
-sudo apt install ./muser_0.2.8_arm64.deb
+sudo apt install ./muser_0.2.9_arm64.deb
 ```
 
 All configuration happens inside Muser; there is no separate setup command.
 
 1. Open **Muser** in the Launcher, press **Space**, or choose
-   **S → Phone setup → Enter**.
+   **P → Phone setup → Enter**.
 2. On first setup the screen enlarges the full `http://IP:port/` address and a
    QR code. Connect the phone or computer to the same LAN and open the address
    by scanning or typing it.
@@ -261,11 +264,13 @@ call does not redial or resume capture on its own; press Space again.
 | Space | Open phone setup when unpaired; retry the Muse connection when paired but offline; start/end voice when connected |
 | B | Interrupt playback and keep talking |
 | M | Mute or unmute the microphone |
-| Z / C, or Left / Right | Playback volume; in Settings, adjust the current row |
+| Z / C, or Left / Right | Previous / next message; in Settings, change the current value |
+| F / X, or Up / Down | Page the current message; move through menus and Settings |
+| S / D | Volume down / up |
+| P | Settings |
+| H | Help: every shortcut and the build version |
 | Enter | End voice and open the text input; send while editing |
 | Tab | Switch between Home and History |
-| F / X, or Up / Down | Menu selection and scrolling; at a history edge, move to the previous/next entry |
-| S | Settings |
 | Short Esc | Back; hang up on the home screen during a call |
 | Long Esc (700 ms) | End the call, release resources and exit |
 
@@ -291,7 +296,7 @@ peak limit of 30,000 to avoid clipping.
 
 Live audio is uploaded in 40 ms frames, paced so send time does not accumulate
 into the next frame interval. Audio queued before the call is admitted is
-discarded at connect. `Z` / `C` adjust Muser's playback volume, default 70%; at
+discarded at connect. `S` / `D` adjust Muser's playback volume, default 70%; at
 100% the original PCM amplitude reaches the system audio layer and system
 volume still controls the speaker.
 

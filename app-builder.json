@@ -2,7 +2,7 @@
   "app_name": "Muser",
   "package_name": "muser",
   "bin_name": "muser",
-  "version": "0.2.8",
+  "version": "0.2.9",
   "description": "Independent Muse voice companion for Cardputer Zero",
   "store": {
     "summary": "Talk to Muse with a pixel companion and live captions.",

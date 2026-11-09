@@ -23,6 +23,9 @@ extern "C" {
 #include "src/drivers/display/fb/lv_linux_fbdev.h"
 #endif
 namespace fs=std::filesystem;
+#ifndef MUSER_VERSION
+#define MUSER_VERSION "dev"
+#endif
 static volatile sig_atomic_t interrupted=0;
 static void stop_signal(int){interrupted=1;}
 static uint32_t ticks(){
@@ -57,10 +60,11 @@ class UI{
     json prefs_={{"volume",70},{"idle_timeout",45},{"overall_timeout",300},{"input_device",nullptr},{"output_device",nullptr},{"language","en"}};
     json devices_=json::array();
     int history_=0,setting_=0;
-    std::string mode_="unpaired",status_="Starting",notice_,caption_id_,setup_url_,pair_name_,call_phase_="idle";
+    std::string mode_="unpaired",status_="Starting",notice_,caption_id_,setup_url_,pair_name_,call_phase_="idle",previous_page_="home";
     uint32_t setup_until_=0;
     float level_=0,mode_at_=0;
     bool call_=false,muted_=false,paired_=false;
+    bool call_has_text_=false,follow_latest_=true;
     uint32_t esc_at_=0,notice_until_=0;
     bool esc_down_=false;
     bool chinese()const{return prefs_.value("language",std::string("en"))=="zh-CN";}
@@ -74,41 +78,76 @@ class UI{
     std::string footer_text()const{
         if(page=="setup"||page=="pairing")return tr("Same Wi-Fi   Esc Cancel","同一局域网   Esc 取消");
         if(page=="compose")return tr("Enter Send   Esc Cancel   English input","Enter 发送   Esc 取消   英文输入");
-        if(page=="settings")return tr("F/X Select   Z/C Change   Enter OK   Esc Back","F/X 选择  Z/C 修改  Enter 确认");
-        if(page=="history")return tr("F/X Scroll   Tab Home   Esc Back","F/X 翻阅   Tab 返回   Esc 返回");
+        if(page=="settings")return tr("F/X Select   Z/C Change   S/D Vol   Esc Back","F/X 选择  Z/C 修改  S/D 音量  Esc 返回");
+        if(page=="help")return tr("F/X Scroll   H/Esc Back","F/X 滚动   H/Esc 返回");
+        if(page=="history")return tr("Z/C Message   F/X Page   Tab Home","Z/C 消息  F/X 翻页  Tab 返回");
         if(call_phase_=="stopping")return tr("Ending call...","正在结束语音……");
-        if(call_)return tr("Space End   B Interrupt   M Mute","Space 挂断   B 打断   M 静音");
-        if(paired_&&(mode_=="connecting"||mode_=="offline"))return tr("Space Retry Muse   S Settings","Space 重试 Muse   S 设置");
-        if(mode_=="unpaired")return tr("Space Phone setup   S Settings","Space 手机连接   S 设置");
-        return call_?tr("Space End   B Interrupt   M Mute","Space 挂断   B 打断   M 静音"):tr("Space Talk   Enter Type   S Settings","Space 通话   Enter 输入   S 设置");
+        if(call_)return tr("Space End   B Break   Z/C Msg   S/D Vol   H Help","Space 挂断  B 打断  Z/C 消息  S/D 音量  H 帮助");
+        if(paired_&&(mode_=="connecting"||mode_=="offline"))return tr("Space Retry   P Settings   H Help","Space 重试  P 设置  H 帮助");
+        if(mode_=="unpaired")return tr("Space Setup   P Settings   H Help","Space 连接  P 设置  H 帮助");
+        return tr("Space Talk   Enter Type   P Settings   H Help","Space 通话  Enter 输入  P 设置  H 帮助");
+    }
+    void change_volume(int delta){
+        int volume=std::clamp(prefs_["volume"].get<int>()+delta,0,100);prefs_["volume"]=volume;
+        bridge_.send({{"command","settings"},{"values",{{"volume",volume}}}});
+        toast(tr("Volume ","音量 ")+std::to_string(volume)+"%");
     }
     void refresh_caption(){
         if(page!="home"||!caption_)return;
+        if(call_&&!call_has_text_){
+            lv_obj_set_style_text_font(role_,&lv_font_montserrat_10,0);
+            lv_label_set_text(role_,"MUSER");
+            std::string hint;
+            if(call_phase_=="stopping")hint=tr("Ending call...","正在结束语音……");
+            else if(mode_=="listening")hint=tr("Listening...\n\nSpeak now.","正在聆听……\n\n请开始说话。");
+            else if(call_phase_=="starting")hint=tr("Starting voice...\n\nConnecting to Muse.\nPlease wait.","正在开启语音……\n\n正在连接 Muse\n请稍候。");
+            else hint=tr("Listening...\n\nSpeak now.","正在聆听……\n\n请开始说话。");
+            lv_label_set_text(caption_,hint.c_str());
+            lv_obj_set_style_text_color(caption_,color(ACCENT),0);
+            if(caption_id_!="__prompt__"){lv_obj_scroll_to_y(scroll_,0,LV_ANIM_OFF);caption_id_="__prompt__";}
+            return;
+        }
+        lv_obj_set_style_text_color(caption_,color(TEXT),0);
         if(paired_&&!call_&&(mode_=="connecting"||mode_=="offline")){
             lv_obj_set_style_text_font(role_,chinese()?font_:&lv_font_montserrat_10,0);
             lv_label_set_text(role_,tr("PAIRED","已配对").c_str());
-            lv_label_set_text(caption_,status_.c_str());return;
+            lv_label_set_text(caption_,status_.c_str());caption_id_.clear();return;
         }
         if(messages_.empty()){
             lv_label_set_text(role_,"MUSER");
             auto hint=mode_=="unpaired"?tr("Press Space for\nphone setup.\n\nScan. Paste. Pair.","按空格开始\n手机连接\n\n扫码导入后\n蓝牙配对"):
-                tr("Press Space to\ntalk to Muse.\n\nTab for this\nsession's messages.","按空格，与 Muse\n开始语音对话。\n\nTab 查看本次记录");
-            lv_label_set_text(caption_,hint.c_str());return;
+                tr("Press Space to\ntalk to Muse.\n\nTab for history.\nH for help.","按空格，与 Muse\n开始语音对话。\n\nTab 查看记录\nH 查看帮助");
+            lv_label_set_text(caption_,hint.c_str());caption_id_.clear();return;
         }
-        auto& m=messages_.back();
+        int last=int(messages_.size())-1;
+        if(history_<0||history_>last)history_=last;
+        auto& m=messages_[history_];
+        std::string role=m.role=="user"?tr("YOU","我"):"MUSE";
+        if(messages_.size()>1)role+=" "+std::to_string(history_+1)+"/"+std::to_string(messages_.size());
         lv_obj_set_style_text_font(role_,m.role=="user"?font_:&lv_font_montserrat_10,0);
-        lv_label_set_text(role_,m.role=="user"?tr("YOU","我").c_str():"MUSE");
+        lv_label_set_text(role_,role.c_str());
         lv_label_set_text(caption_,m.text.c_str());
         if(caption_id_!=m.id){lv_obj_scroll_to_y(scroll_,0,LV_ANIM_OFF);caption_id_=m.id;}
-        else if(!m.final){lv_obj_update_layout(scroll_);lv_obj_scroll_to_y(scroll_,LV_COORD_MAX,LV_ANIM_OFF);}
+        else if(!m.final&&follow_latest_&&history_==last){lv_obj_update_layout(scroll_);lv_obj_scroll_to_y(scroll_,LV_COORD_MAX,LV_ANIM_OFF);}
     }
     void history_caption(){
-        if(messages_.empty()){lv_label_set_text(header_,tr("Session | 0 messages","本次对话 · 0 条").c_str());lv_label_set_text(caption_,tr("No messages yet.\nPress Tab to go back and talk to Muse.","本次还没有对话。\n按 Tab 返回，与 Muse 说句话。").c_str());return;}
+        if(messages_.empty()){history_=0;caption_id_.clear();lv_label_set_text(header_,tr("Session | 0 messages","本次对话 · 0 条").c_str());lv_label_set_text(caption_,tr("No messages yet.\nPress Tab to go back and talk to Muse.","本次还没有对话。\n按 Tab 返回，与 Muse 说句话。").c_str());return;}
         history_=std::clamp(history_,0,int(messages_.size())-1);
         auto& m=messages_[history_];
         lv_label_set_text(caption_,m.text.c_str());
         std::string h=tr("Session  ","本次对话  ")+std::to_string(history_+1)+"/"+std::to_string(messages_.size())+tr(" | ","  · ")+(m.role=="user"?tr("You","我"):"Muse");
-        lv_label_set_text(header_,h.c_str());lv_obj_scroll_to_y(scroll_,0,LV_ANIM_OFF);
+        lv_label_set_text(header_,h.c_str());lv_obj_scroll_to_y(scroll_,0,LV_ANIM_OFF);caption_id_=m.id;
+    }
+    std::string help_text()const{
+        std::string s=std::string("Muser ")+MUSER_VERSION+"\n\n";
+        s+=tr("Space Talk/end   B Interrupt   M Mute\n","Space 开始/结束   B 打断   M 静音\n");
+        s+=tr("Z/C or Left/Right   Previous / next message\n","Z/C 或 左/右   上一条 / 下一条消息\n");
+        s+=tr("F/X or Up/Down   Page the current message\n","F/X 或 上/下   当前消息翻页\n");
+        s+=tr("S/D Volume -/+   P Settings   H Help\n","S/D 音量 -/+   P 设置   H 帮助\n");
+        s+=tr("Tab History   Enter Text chat\n","Tab 本次记录   Enter 文字聊天\n");
+        s+=tr("Esc Back/hang up   Hold Esc Exit\n","Esc 返回/挂断   长按 Esc 退出\n");
+        s+=tr("In text input, letters are typed as text.","文字输入时，字母按普通文本输入。");
+        return s;
     }
     void refresh_settings(){
         if(page!="settings")return;
@@ -214,7 +253,11 @@ public:
         }else if(page=="history"){
             scroll_=plain(body_,8,4,304,120);lv_obj_add_flag(scroll_,LV_OBJ_FLAG_SCROLLABLE);
             lv_obj_set_scrollbar_mode(scroll_,LV_SCROLLBAR_MODE_OFF);
-            caption_=label(scroll_,cjk_,0,0,298,"");history_=int(messages_.size())-1;history_caption();
+            caption_=label(scroll_,cjk_,0,0,298,"");if(history_<0||history_>=int(messages_.size()))history_=int(messages_.size())-1;history_caption();
+        }else if(page=="help"){
+            scroll_=plain(body_,4,2,312,124);lv_obj_add_flag(scroll_,LV_OBJ_FLAG_SCROLLABLE);
+            lv_obj_set_scrollbar_mode(scroll_,LV_SCROLLBAR_MODE_OFF);
+            caption_=label(scroll_,chinese()?cjk_:&lv_font_montserrat_10,4,0,304,help_text().c_str());
         }else if(page=="compose"){
             label(body_,font_,8,3,304,tr("English, numbers and symbols","输入英文、数字和符号").c_str(),DIM);
             editor_=lv_textarea_create(body_);lv_obj_set_pos(editor_,8,27);lv_obj_set_size(editor_,304,92);
@@ -250,14 +293,22 @@ public:
             std::string id=e.value("id",std::string()),text=e.value("text",std::string());
             if(id.empty()||text.size()>65536)return;
             auto it=std::find_if(messages_.begin(),messages_.end(),[&](auto& m){return m.id==id;});
-            if(it==messages_.end())messages_.push_back({id,e.value("role",std::string("assistant")),text,e.value("final",false)});
+            bool added=it==messages_.end();
+            if(added)messages_.push_back({id,e.value("role",std::string("assistant")),text,e.value("final",false)});
             else{it->text=text;it->final=e.value("final",false);}
             size_t bytes=0;for(auto& m:messages_)bytes+=m.text.size();
             while(messages_.size()>256||bytes>2*1024*1024){bytes-=messages_.front().text.size();messages_.erase(messages_.begin());}
-            refresh_caption();
+            if(call_)call_has_text_=true;
+            if(added){history_=int(messages_.size())-1;follow_latest_=true;}
+            else if(follow_latest_)history_=int(messages_.size())-1;
+            if(page=="history")history_caption();else refresh_caption();
         }else if(type=="level")level_=mode_=="speaking"?e.value("playback",0.f):e.value("mic",0.f);
         else if(type=="call"){
-            call_=e.value("active",false);call_phase_=e.value("phase",std::string(call_?"live":"idle"));
+            bool active=e.value("active",false);
+            std::string phase=e.value("phase",std::string(active?"live":"idle"));
+            if(active&&(!call_||phase=="starting")){call_has_text_=false;follow_latest_=true;}
+            call_=active;call_phase_=phase;
+            refresh_caption();
         }
         else if(type=="muted"){muted_=e.value("value",false);refresh_settings();}
         else if(type=="settings"){
@@ -289,6 +340,7 @@ public:
             else if(esc_down_){esc_down_=false;if(ticks()-esc_at_<700){
                 if(modal_){lv_obj_delete(modal_);modal_=nullptr;}
                 else if(page=="setup"||page=="pairing"){bridge_.send({{"command","pair.cancel"}});show("settings");}
+                else if(page=="help")show(previous_page_);
                 else if(page!="home")show("home");else if(call_)bridge_.send({{"command","call.stop"}});
                 else toast(tr("Hold Esc to exit Muser","长按 Esc 退出 Muser"));
             }}return;
@@ -312,14 +364,17 @@ public:
             int dir=routed==K_UP?-1:1;
             if(page=="settings"){setting_=(setting_+dir+10)%10;refresh_settings();}
             else if(scroll_){
-                lv_obj_update_layout(scroll_);
-                if(page=="history"&&((dir<0&&lv_obj_get_scroll_y(scroll_)<=0)||(dir>0&&lv_obj_get_scroll_bottom(scroll_)<=0))){
-                    history_+=dir;history_caption();
-                }else lv_obj_scroll_by(scroll_,0,-dir*48,LV_ANIM_OFF);
+                follow_latest_=false;lv_obj_update_layout(scroll_);
+                int step=std::max(24,lv_obj_get_height(scroll_)-18);
+                lv_obj_scroll_by(scroll_,0,-dir*step,LV_ANIM_OFF);
             }return;
         }
         if(e.repeat)return;
         int k=routed;if(k>='A'&&k<='Z')k+=32;
+        if(page=="help"){
+            if(k=='h')show(previous_page_);
+            return;
+        }
         if(page=="settings"){
             if(k==K_LEFT||k==K_RIGHT)adjust_setting(k==K_LEFT?-1:1);
             else if(k==K_ENTER){
@@ -327,23 +382,32 @@ public:
                 else if(setting_==7)bridge_.send({{"command","clear"}});
                 else if(setting_==8)bridge_.send({{"command","connect"}});
                 else adjust_setting(1);
-            }return;
+            }else if(k=='h'){previous_page_="settings";show("help");}
+            else if(k=='s'||k=='d')change_volume(k=='d'?5:-5);
+            return;
         }
         if(k==K_TAB)show(page=="history"?"home":"history");
         else if(k==K_ENTER)bridge_.send({{"command","compose"}});
-        else if(k=='s')show("settings");
+        else if(k=='p')show("settings");
+        else if(k=='h'){previous_page_=page;show("help");}
+        else if(k=='s'||k=='d')change_volume(k=='d'?5:-5);
         else if(k==' '){auto command=space_command();if(!command.empty())bridge_.send({{"command",command}});}
         else if(k=='b')bridge_.send({{"command","call.interrupt"}});
         else if(k=='m'){muted_=!muted_;bridge_.send({{"command","mic.mute"},{"muted",muted_}});}
         else if(k==K_LEFT||k==K_RIGHT){
-            int volume=std::clamp(prefs_["volume"].get<int>()+(k==K_LEFT?-5:5),0,100);prefs_["volume"]=volume;
-            bridge_.send({{"command","settings"},{"values",{{"volume",volume}}}});toast(tr("Volume ","音量 ")+std::to_string(volume)+"%");
+            if(!messages_.empty()&&!(call_&&!call_has_text_)){
+                int dir=k==K_LEFT?-1:1;
+                int base=history_<0?int(messages_.size())-1:history_;
+                history_=std::clamp(base+dir,0,int(messages_.size())-1);
+                follow_latest_=false;
+                if(page=="history")history_caption();else refresh_caption();
+            }
         }
     }
     void frame(){
         if(esc_down_&&ticks()-esc_at_>=700)running=false;
         if(page!="history"){
-            std::string title=page=="settings"?tr("Settings  ","设置  ")+std::to_string(setting_+1)+"/10":page=="compose"?tr("Muser | Text chat","Muser · 文字聊天"):page=="setup"?tr("Muser | Phone setup","Muser · 手机设置"):page=="pairing"?tr("Muser | Pair phone","Muser · 蓝牙配对"):"Muser";
+            std::string title=page=="settings"?tr("Settings  ","设置  ")+std::to_string(setting_+1)+"/10":page=="help"?tr("Muser | Help","Muser · 帮助"):page=="compose"?tr("Muser | Text chat","Muser · 文字聊天"):page=="setup"?tr("Muser | Phone setup","Muser · 手机设置"):page=="pairing"?tr("Muser | Pair phone","Muser · 蓝牙配对"):"Muser";
             if(page=="home")title+=tr(" | ","  · ")+(mode_=="unpaired"?tr("Not paired","未配对"):mode_=="offline"?tr("Paired / retrying","已配对 / 重试中"):mode_=="connecting"?tr("Connecting Muse","连接 Muse 中"):mode_=="speaking"?tr("Speaking","说话中"):mode_=="listening"?tr("Listening","聆听中"):mode_=="thinking"?tr("Thinking","思考中"):mode_=="error"?tr("Error","连接异常"):tr("Ready","就绪"));
             if(page=="home"&&call_phase_=="starting")title=tr("Muser | Starting voice","Muser · 正在开启语音");
             if(page=="home"&&call_phase_=="stopping")title=tr("Muser | Ending voice","Muser · 正在结束语音");
@@ -390,18 +454,46 @@ public:
         frame();capture(fs::path(root_path())/".cache/ui-paired-retry.png");
         event({{"type","status"},{"mode","idle"},{"text","Demo"}});
         event({{"type","call"},{"active",true},{"phase","starting"}});
+        if(std::string(lv_label_get_text(caption_)).find("Starting voice")==std::string::npos)throw std::runtime_error("Starting voice prompt missing");
         event({{"type","status"},{"mode","connecting"},{"text","Starting voice"}});
         if(space_command()!="call.stop"||footer_text().find("End")==std::string::npos)throw std::runtime_error("Voice startup Space incorrectly reconnects Muse");
+        event({{"type","status"},{"mode","listening"},{"text","Listening"}});
+        if(std::string(lv_label_get_text(caption_)).find("Listening")==std::string::npos)throw std::runtime_error("Listening prompt missing");
+        event({{"type","transcript"},{"id","prompt"},{"role","assistant"},{"text","Prompt replaced"},{"final",true}});
+        if(std::string(lv_label_get_text(caption_))!="Prompt replaced")throw std::runtime_error("Transcript did not replace the call prompt");
         event({{"type","call"},{"active",true},{"phase","stopping"}});
         if(!space_command().empty())throw std::runtime_error("Space queued a new command during hangup");
         event({{"type","call"},{"active",false},{"phase","idle"}});
         event({{"type","status"},{"mode","idle"},{"text","Demo"}});
         if(space_command()!="call.start")throw std::runtime_error("Voice redial did not recover after hangup");
-        show("settings");setting_=0;key({'x',true,"x"});
+        event({{"type","transcript"},{"id","u1"},{"role","user"},{"text","First message"},{"final",true}});
+        event({{"type","transcript"},{"id","a1"},{"role","assistant"},{"text","Second message"},{"final",true}});
+        if(std::string(lv_label_get_text(caption_))!="Second message")throw std::runtime_error("Latest message was not shown");
+        key({K_LEFT,true,""});
+        if(history_!=1||std::string(lv_label_get_text(caption_))!="First message")throw std::runtime_error("Left did not move to the previous message");
+        key({K_RIGHT,true,""});
+        if(history_!=2||std::string(lv_label_get_text(caption_))!="Second message")throw std::runtime_error("Right did not move to the next message");
+        std::string longtext;
+        for(int i=0;i<24;i++)longtext+="Line "+std::to_string(i)+"\n";
+        event({{"type","transcript"},{"id","long"},{"role","assistant"},{"text",longtext},{"final",true}});
+        key({K_DOWN,true,""});
+        if(lv_obj_get_scroll_y(scroll_)<=0)throw std::runtime_error("Down did not page the current message");
+        key({K_UP,true,""});
+        if(lv_obj_get_scroll_y(scroll_)>0)throw std::runtime_error("Up did not page back");
+        key({'p',true,"p"});
+        if(page!="settings")throw std::runtime_error("P did not open Settings");
+        setting_=0;key({'x',true,"x"});
         if(setting_!=1)throw std::runtime_error("Fn-free down navigation failed");
         key({'f',true,"f"});if(setting_!=0)throw std::runtime_error("Fn-free up navigation failed");
-        setting_=3;int volume=prefs_["volume"].get<int>();key({'z',true,"z"});key({'c',true,"c"});
+        setting_=3;int volume=prefs_["volume"].get<int>();
+        key({'d',true,"d"});if(prefs_["volume"]!=volume+5)throw std::runtime_error("D did not raise volume");
+        key({'s',true,"s"});if(prefs_["volume"]!=volume)throw std::runtime_error("S did not lower volume");
+        key({'z',true,"z"});key({'c',true,"c"});
         if(prefs_["volume"]!=volume)throw std::runtime_error("Fn-free value adjustment failed");
+        key({'h',true,"h"});
+        if(page!="help"||std::string(lv_label_get_text(caption_)).find(MUSER_VERSION)==std::string::npos)throw std::runtime_error("Help page or version missing");
+        key({'h',true,"h"});
+        if(page!="settings")throw std::runtime_error("Help did not return to Settings");
         setting_=9;adjust_setting(1);
         if(!chinese()||font_!=cjk_)throw std::runtime_error("Chinese language switch failed");
         frame();capture(fs::path(root_path())/".cache/ui-zh-CN.png");
@@ -412,6 +504,10 @@ public:
         if(chinese()||font_!=&lv_font_montserrat_12)throw std::runtime_error("English language switch failed");
         frame();
         for(unsigned char c:std::string(lv_label_get_text(header_)))if(c>=128)throw std::runtime_error("Unsupported English chrome glyph");
+        show("home");key({'h',true,"h"});
+        if(page!="help")throw std::runtime_error("H did not open Help");
+        key({'h',true,"h"});
+        if(page!="home")throw std::runtime_error("H did not close Help");
         setting_=0;
         show("compose");key({'f',true,"f"});key({'x',true,"x"});key({'z',true,"z"});key({'c',true,"c"});
         if(std::string(lv_textarea_get_text(editor_))!="fxzc")throw std::runtime_error("Navigation letters lost in text input");
@@ -493,7 +589,8 @@ int main(int argc,char** argv){
                         ui.event({{"type","level"},{"playback",.65f}});ui.frame();ui.capture(fs::path(capture_dir)/"speaking.png");}
                     if(stage==2){ui.show("history");ui.frame();ui.capture(fs::path(capture_dir)/"history.png");}
                     if(stage==3){ui.show("settings");ui.frame();ui.capture(fs::path(capture_dir)/"settings.png");}
-                    if(stage==4){ui.event({{"type","setup"},{"url","http://192.168.1.42:8050/"},{"expires",300}});ui.frame();ui.capture(fs::path(capture_dir)/"setup.png");ui.running=false;}
+                    if(stage==4){ui.event({{"type","setup"},{"url","http://192.168.1.42:8050/"},{"expires",300}});ui.frame();ui.capture(fs::path(capture_dir)/"setup.png");}
+                    if(stage==5){ui.show("help");ui.frame();ui.capture(fs::path(capture_dir)/"help.png");ui.running=false;}
                     ++stage;
                 }
                 if(self_test&&stage==0&&t>400){ui.test_composer();stage=1;}
