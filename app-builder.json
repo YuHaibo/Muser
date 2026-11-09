@@ -19,7 +19,9 @@
     ],
     "share_code": "MUSE",
     "license": "Apache-2.0",
+    "source_repo": "https://github.com/YuHaibo/Muser",
     "author": {
+      "github": "YuHaibo",
       "display_name": "Muser community"
     },
     "permissions": {
