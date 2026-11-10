@@ -2,11 +2,11 @@
   "app_name": "Muser",
   "package_name": "muser",
   "bin_name": "muser",
-  "version": "0.2.9",
+  "version": "1.0.0",
   "description": "Independent Muse voice companion for Cardputer Zero",
   "store": {
     "summary": "Talk to Muse with a pixel companion and live captions.",
-    "description": "Muser is an independent, unofficial community app for Cardputer Zero. Voice conversations, captions, keyboard chat and session-only records on a 320x170 display. English UI by default, with Simplified Chinese available in Settings. Requires a Muse account, SDK token and phone pairing. Not affiliated with or endorsed by Meta. Fn-free F/X/Z/C navigation and in-app setup by QR or the displayed IP and port; paste your SDK token in any phone or PC browser, then pair over Bluetooth. Saved pairing is retained while Muse service connections retry.",
+    "description": "Muser is an independent, unofficial community app for Cardputer Zero. Voice conversations, captions, keyboard chat and session-only records on a 320x170 display. English UI by default, with Simplified Chinese available in Settings. Requires a Muse account, SDK token and phone pairing; Muse is not available in every country or region, so confirm that you are in a supported region and that your account works before pairing. Not affiliated with or endorsed by Meta. Fn-free navigation with message paging, an in-app key reference, and setup by QR or the displayed IP and port; paste your SDK token in any phone or PC browser, then pair over Bluetooth. Saved pairing is retained while Muse service connections retry.",
     "categories": [
       "AI"
     ],
@@ -22,7 +22,7 @@
     "source_repo": "https://github.com/YuHaibo/Muser",
     "author": {
       "github": "YuHaibo",
-      "display_name": "Muser community"
+      "display_name": "YuHaibo"
     },
     "permissions": {
       "camera": false,
@@ -36,7 +36,7 @@
     "locales": {
       "zh-CN": {
         "summary": "像素伙伴、语音对话与实时字幕",
-        "description": "Muser 是独立开发的非官方社区应用，支持语音、字幕、英文键盘聊天和本次会话记录。英语默认、简体中文可切换；F/X/Z/C 无需 Fn 导航，App 内扫码在手机粘贴个人 SDK token 后自动蓝牙配对，与 Meta 无隶属或背书关系。"
+        "description": "Muser 是独立开发的非官方社区应用，支持语音、字幕、英文键盘聊天和本次会话记录。英语默认、简体中文可切换；无需 Fn 即可使用消息翻页、按键帮助等导航；App 内扫码在手机粘贴个人 SDK token 后自动蓝牙配对，与 Meta 无隶属或背书关系。Muse 并非在所有地区可用，请在配对前确认你处于支持的地区且账号可用。"
       }
     }
   }

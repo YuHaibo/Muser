@@ -167,7 +167,7 @@ The repository also provides a Docker entry point that pins the build image:
 MUSER_BSP_DIR=/absolute/path/to/sdk_bsp-src ./scripts/build-arm64.sh
 ```
 
-The artifact is `dist/muser_0.2.9_arm64.deb`. It targets the current official
+The artifact is `dist/muser_1.0.0_arm64.deb`. It targets the current official
 BSP's ARM64 system and requires glibc ≥ 2.38 and libstdc++ ≥ 13.2; apt checks
 those versions. The package contains the UI, SDK, pinned websockets and
 sounddevice wheels, fonts, icons and the APPLaunch entry. Python cryptography,
@@ -185,7 +185,7 @@ SDK token. Muse is not available in every region: make sure you are in a
 supported country or region and that your Muse account is active before pairing.
 
 ```shell
-sudo apt install ./muser_0.2.9_arm64.deb
+sudo apt install ./muser_1.0.0_arm64.deb
 ```
 
 All configuration happens inside Muser; there is no separate setup command.

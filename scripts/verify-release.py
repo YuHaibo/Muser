@@ -9,7 +9,7 @@ root=Path(__file__).resolve().parents[1]
 meta=json.loads((root/"app-builder.json").read_text())
 assert meta["app_name"]=="Muser" and meta["package_name"]=="muser"
 assert meta["store"]["share_code"]=="MUSE"
-assert meta["version"]=="0.2.9"
+assert meta["version"]=="1.0.0"
 assert meta["store"]["license"]=="Apache-2.0"
 assert len(meta["store"]["screenshots"])==4
 for path in meta["store"]["screenshots"]:
